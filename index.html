@@ -1,36 +1,638 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CUBA · Brindis y asado de dirigentes 2026</title>
-<meta name="description" content="Confirmación de asistencia y pago del cubierto — Club Universitario de Buenos Aires.">
-<meta name="theme-color" content="#060e1f">
-<link rel="icon" href="https://drive.google.com/thumbnail?id=1hGttwCyPKZu-MZD79-POx9YgrOEmOARU&sz=w128">
-<!--
-  Redirección (no iframe): Apps Script dentro de un iframe falla cuando el visitante tiene
-  una cuenta de Google logueada (redirige a /a/macros/<dominio>/ y en iPhone se ve
-  "Sorry, unable to open the file at this time"). Abierto directo funciona siempre.
--->
-<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbxuCmwEY2gH_hcs_Z6AjrpqIlh7qJ-v2cfagUmIogZmgIf0TtIbywW0M_FEOKCcmUXB/exec">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;}
-  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
-    background:radial-gradient(1200px 500px at 50% -120px,rgba(46,111,212,.18),transparent 70%),#060e1f;
-    color:#8ea6cc;font-family:system-ui,-apple-system,sans-serif;font-size:14px;text-align:center;padding:16px;}
-  img{width:92px;opacity:.9;animation:p 1.4s ease-in-out infinite;}
-  @keyframes p{50%{opacity:.45;}}
-  a{color:#2e6fd4;}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CUBA · Brindis y asado de dirigentes 2026</title>
+  <meta name="description" content="Confirmación de asistencia y pago del cubierto — Club Universitario de Buenos Aires.">
+  <meta name="theme-color" content="#060e1f">
+  <link rel="icon" href="https://drive.google.com/thumbnail?id=1hGttwCyPKZu-MZD79-POx9YgrOEmOARU&sz=w128">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!--
+    Front estático del formulario. Los datos (evento, precio, áreas) y toda la lógica de
+    registro y pago viven en el Apps Script cuba-brindis-dirigentes-gs, que acá se usa como API.
+    El diseño es el mismo de Index.html / Resultado.html de ese proyecto: si se toca uno, tocar el otro.
+  -->
+  <style>
+    /* Formato CUBA (mismo sistema que cuba-estadisticas-pages y fichaPartido-pages) */
+    :root {
+      --navy: #060e1f;
+      --navy-mid: #111827;
+      --navy-soft: #1a2236;
+      --navy-card: #1e2a40;
+      --blue: #1a4fa0;
+      --blue-light: #2e6fd4;
+      --blue-soft: #1a3a6e;
+      --white: #f0f4ff;
+      --muted: #8ea6cc;
+      --border: #2a3a58;
+      --green: #0a8f4a;
+      --amber: #f59e0b;
+      --red: #e05252;
+      --mp: #009ee3;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      background: var(--navy);
+      color: var(--white);
+      font-family: 'DM Sans', Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
+    }
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(1200px 500px at 50% -120px, rgba(46,111,212,.18), transparent 70%),
+        var(--navy);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ---------- Encabezado ---------- */
+    .app-header {
+      background: linear-gradient(135deg, #060e1f 0%, #0d2248 60%, #0a1a3a 100%);
+      border-bottom: 4px solid var(--blue-light);
+      padding: 28px 20px 24px;
+      text-align: center;
+    }
+    .header-in { max-width: 760px; margin: 0 auto; }
+    .header-in img {
+      display: block; width: 92px; height: auto; margin: 0 auto 14px;
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
+    }
+    .year {
+      font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px;
+      color: var(--blue-light); line-height: 1;
+    }
+    .app-header h1 {
+      margin: 6px 0 0;
+      font-family: 'Bebas Neue', sans-serif; font-weight: 400;
+      font-size: 46px; line-height: 1; letter-spacing: 1px;
+    }
+
+    .facts {
+      max-width: 760px; margin: 18px auto 0;
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    }
+    .fact {
+      padding: 8px 16px; border-radius: 999px;
+      background: rgba(46,111,212,.14); border: 1px solid var(--blue-soft);
+      font-size: 15px; font-weight: 600;
+    }
+
+    /* ---------- Contenido ---------- */
+    .container { max-width: 760px; margin: 26px auto 64px; padding: 0 20px; }
+
+    .card {
+      background: var(--navy-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .card p { margin: 0 0 12px; color: var(--muted); }
+    .card p:last-child { margin-bottom: 0; }
+    .card p strong { color: var(--white); }
+
+    .invitacion { display: block; width: 100%; border-radius: var(--radius); margin-bottom: 18px; }
+
+    h2 {
+      margin: 0 0 4px;
+      font-family: 'Bebas Neue', sans-serif; font-weight: 400;
+      font-size: 28px; letter-spacing: 1px; line-height: 1.1;
+      color: var(--white);
+    }
+    form.card h2 { padding-bottom: 10px; border-bottom: 2px solid var(--blue-light); display: inline-block; }
+
+    .price-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      margin-top: 18px; padding: 14px 18px;
+      background: var(--navy-soft); border: 1px solid var(--blue-soft);
+      border-left: 4px solid var(--blue-light); border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+    .price-row b {
+      font-family: 'Bebas Neue', sans-serif; font-weight: 400;
+      font-size: 34px; letter-spacing: 1px; line-height: 1; color: var(--white); white-space: nowrap;
+    }
+
+    label, .label { display: block; font-weight: 600; margin: 20px 0 8px; }
+    .req { color: var(--red); }
+    .opt { color: var(--muted); font-weight: 400; font-size: 14px; }
+
+    input, select {
+      width: 100%; padding: 15px 16px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--navy-mid); color: var(--white);
+      font-family: inherit; font-size: 16px;
+      appearance: none; -webkit-appearance: none;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238ea6cc' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px;
+    }
+    select option { background: var(--navy-mid); color: var(--white); }
+    input::placeholder { color: #5a7aaa; }
+    input:focus, select:focus { outline: none; border-color: var(--blue-light); box-shadow: 0 0 0 3px rgba(46,111,212,.3); }
+
+    .choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .choice button {
+      padding: 16px 10px; border-radius: var(--radius-sm); cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--navy-mid); color: var(--muted);
+      font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; line-height: 1;
+      touch-action: manipulation;
+    }
+    .choice button.on {
+      border-color: var(--blue-light); color: #fff;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
+    }
+
+    .note {
+      margin-top: 14px; padding: 13px 15px; border-radius: var(--radius-sm);
+      background: rgba(46,111,212,.12); border: 1px solid var(--blue-soft);
+      border-left: 4px solid var(--blue-light);
+      color: var(--white); font-size: 15px;
+    }
+
+    .error {
+      margin-top: 16px; padding: 12px 14px; border-radius: var(--radius-sm);
+      background: rgba(224,82,82,.12); border: 1px solid var(--red); color: #ffd0d0;
+    }
+
+    .button {
+      display: block; width: 100%; margin-top: 22px; padding: 16px;
+      border: 0; border-radius: var(--radius); cursor: pointer; text-align: center; text-decoration: none;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%); color: #fff;
+      font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; line-height: 1.1;
+      box-shadow: 0 6px 18px rgba(46,111,212,.35);
+      touch-action: manipulation;
+    }
+    .button:disabled { opacity: .55; cursor: wait; }
+    .button.mp { background: var(--mp); box-shadow: 0 6px 18px rgba(0,158,227,.35); }
+    .button.ghost { background: transparent; color: var(--white); border: 1.5px solid var(--border); box-shadow: none; }
+
+    .center { text-align: center; }
+    .icon {
+      width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif; font-size: 40px;
+    }
+    .icon.ok { background: var(--green); color: #fff; }
+    .icon.pay { background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%); color: #fff; }
+    .icon.bye { background: var(--navy-soft); border: 2px solid var(--blue-light); font-family: inherit; font-size: 34px; }
+    .center h2 { font-size: 34px; margin-bottom: 10px; }
+
+    .detail { text-align: left; margin: 18px 0 0; }
+    .row {
+      display: flex; justify-content: space-between; gap: 14px;
+      padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 15px;
+    }
+    .row:last-child { border-bottom: 0; }
+    .row span { color: var(--muted); }
+    .row strong { text-align: right; word-break: break-all; }
+    .card p.small { font-size: 14px; color: var(--muted); margin-top: 14px; }
+
+    .foot {
+      text-align: center; color: #5a7aaa; font-size: 12px; letter-spacing: 2px;
+      font-family: 'Bebas Neue', sans-serif; padding: 0 16px 28px;
+    }
+
+    /* ---------- Desktop ---------- */
+    @media (min-width: 900px) {
+      .app-header { padding: 40px 20px 32px; }
+      .header-in img { width: 112px; }
+      .app-header h1 { font-size: 60px; }
+      .year { font-size: 22px; }
+      .fact { font-size: 16px; }
+      .container { margin-top: 36px; }
+      .card { padding: 34px 38px; }
+    }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 600px) {
+      .app-header { padding: 22px 16px 20px; }
+      .header-in img { width: 76px; margin-bottom: 10px; }
+      .app-header h1 { font-size: 36px; }
+      .year { font-size: 17px; }
+      .facts { gap: 8px; margin-top: 14px; }
+      .fact { font-size: 14px; padding: 7px 13px; }
+      .container { margin: 16px auto 40px; padding: 0 12px; }
+      .card { padding: 22px 18px; }
+      h2 { font-size: 26px; }
+      .center h2 { font-size: 30px; }
+      .price-row b { font-size: 30px; }
+      input, select { font-size: 16px; padding: 16px; }
+      .choice button { padding: 18px 8px; font-size: 22px; }
+      .button { padding: 18px 12px; font-size: 22px; letter-spacing: 1px; }
+      .row { flex-direction: column; gap: 2px; }
+      .row strong { text-align: left; }
+    }
+  
+    /* ---------- Resultado del pago ---------- */
+    .icon.wait { background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%); color: #fff; }
+    .icon.bad { background: var(--red); color: #fff; }
+    .when {
+      margin: 18px 0 0; padding: 14px 18px; border-radius: var(--radius-sm);
+      background: var(--navy-soft); border: 1px solid var(--blue-soft); border-left: 4px solid var(--blue-light);
+      text-align: left; font-weight: 600;
+    }
+    .when small { display: block; color: var(--muted); font-weight: 500; font-size: 15px; }
+
+    /* ---------- Carga inicial ---------- */
+    #carga {
+      position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px; padding: 20px; text-align: center;
+      background: radial-gradient(1200px 500px at 50% -120px, rgba(46,111,212,.18), transparent 70%), var(--navy);
+      color: var(--muted);
+    }
+    #carga img { width: 92px; animation: pulso 1.4s ease-in-out infinite; }
+    #carga.fallo img { animation: none; opacity: .6; }
+    #carga .button { max-width: 320px; margin-top: 0; }
+    @keyframes pulso { 50% { opacity: .45; } }
+  </style>
 </head>
 <body>
-<img src="https://drive.google.com/thumbnail?id=1hGttwCyPKZu-MZD79-POx9YgrOEmOARU&sz=w400" alt="CUBA">
-<p>Abriendo el formulario…<br><a id="link" href="https://script.google.com/macros/s/AKfycbxuCmwEY2gH_hcs_Z6AjrpqIlh7qJ-v2cfagUmIogZmgIf0TtIbywW0M_FEOKCcmUXB/exec">Si no se abre, tocá acá</a></p>
-<script>
-  // Deployment estable de cuba-brindis-dirigentes-gs (no cambia entre versiones).
-  var APP_EXEC = 'https://script.google.com/macros/s/AKfycbxuCmwEY2gH_hcs_Z6AjrpqIlh7qJ-v2cfagUmIogZmgIf0TtIbywW0M_FEOKCcmUXB/exec';
-  location.replace(APP_EXEC + location.search);
-</script>
+
+  <div id="carga">
+    <img src="https://drive.google.com/thumbnail?id=1hGttwCyPKZu-MZD79-POx9YgrOEmOARU&sz=w400" alt="CUBA">
+    <div id="cargaTexto">Cargando…</div>
+    <button type="button" class="button hidden" id="cargaReintentar">Reintentar</button>
+  </div>
+
+  <header class="app-header">
+    <div class="header-in">
+      <img id="logo" alt="Escudo CUBA" class="hidden" onerror="this.classList.add('hidden')">
+      <div class="year" id="evAnio"></div>
+      <h1 id="evTitulo"></h1>
+    </div>
+    <div class="facts">
+      <div class="fact" id="evCuando"></div>
+      <div class="fact" id="evDonde"></div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ================= FORMULARIO ================= -->
+    <div id="pantallaForm">
+      <img id="invitacion" class="invitacion hidden" alt="Invitación al brindis"
+           onerror="this.classList.add('hidden')">
+
+      <section class="card">
+        <p>
+          El próximo <strong id="txtFecha"></strong> en <strong id="txtLugar"></strong> se llevará
+          a cabo el tradicional brindis de fin de año, en esta oportunidad con asado de parado.
+        </p>
+        <p>Un momento de encuentro, reencuentro y celebración por el gran año compartido.</p>
+        <p>
+          <strong>Para poder llevarlo a cabo, necesitamos confirmación de asistencia y pago previo
+          del cubierto con Mercado Pago.</strong>
+        </p>
+        <div class="price-row">
+          <span>Valor del cubierto</span>
+          <b class="valor"></b>
+        </div>
+      </section>
+
+      <form class="card" id="form" novalidate>
+        <h2>Datos personales</h2>
+
+        <label for="nombre">Apellido y nombre <span class="req">*</span></label>
+        <input id="nombre" type="text" maxlength="100" autocomplete="name" placeholder="Ej: Pérez, Juan">
+
+        <label for="email">Email <span class="opt">(opcional, para recibir el comprobante)</span></label>
+        <input id="email" type="email" maxlength="120" autocomplete="email" placeholder="nombre@ejemplo.com">
+
+        <label for="area">Pertenezco a <span class="req">*</span></label>
+        <select id="area">
+          <option value="">Elegí una opción</option>
+        </select>
+
+        <div class="label">¿Asistís al asado? <span class="req">*</span></div>
+        <div class="choice">
+          <button type="button" id="btnSi">Sí, asisto</button>
+          <button type="button" id="btnNo">No asisto</button>
+        </div>
+
+        <div class="note hidden" id="notaPago">
+          En el próximo paso pagás el cubierto de <strong class="valor"></strong> con Mercado Pago.
+          Tu lugar queda confirmado cuando se acredita el pago.
+        </div>
+
+        <div class="error hidden" id="error"></div>
+
+        <button type="submit" class="button" id="btnEnviar">Enviar respuesta</button>
+        <p class="small center">Confirmación de asistencia hasta el <span id="txtRsvp"></span>.</p>
+      </form>
+    </div>
+
+    <!-- ================= PAGO DEL CUBIERTO ================= -->
+    <section class="card center hidden" id="pantallaPago">
+      <div class="icon pay">$</div>
+      <h2>Falta un paso: el pago del cubierto</h2>
+      <p>
+        <strong id="pagoNombre"></strong>, registramos tu asistencia.
+        Tu lugar queda confirmado cuando se acredita el pago.
+      </p>
+
+      <div class="detail">
+        <div class="row"><span>Registro</span><strong id="pagoNro"></strong></div>
+        <div class="row"><span>Valor del cubierto</span><strong id="pagoMonto"></strong></div>
+      </div>
+
+      <a class="button mp hidden" id="btnPagar" target="_top" rel="noopener">Pagar con Mercado Pago</a>
+
+      <div class="error hidden" id="errorPago">
+        No pudimos generar el link de pago. Tu asistencia quedó registrada: probá de nuevo.
+      </div>
+      <button type="button" class="button ghost hidden" id="btnReintentar">Generar el link de pago</button>
+
+      <p class="small">Al terminar el pago volvés a esta página y ves la confirmación.</p>
+    </section>
+
+    <!-- ================= NO ASISTE ================= -->
+    <section class="card center hidden" id="pantallaNo">
+      <div class="icon bye">👋</div>
+      <h2>Gracias por responder</h2>
+      <p><strong id="noNombre"></strong>, registramos que no vas a poder acompañarnos esta vez.</p>
+      <p>Lamentamos que no puedas venir. ¡Te esperamos en el próximo encuentro!</p>
+      <p class="small">Si cambiás de opinión, podés volver a completar el formulario hasta el <span id="noRsvp"></span>.</p>
+    </section>
+
+    <!-- ================= CERRADO ================= -->
+    <section class="card center hidden" id="pantallaCerrado">
+      <div class="icon bye">🔒</div>
+      <h2>La confirmación de asistencia ya cerró</h2>
+      <p>El plazo para confirmar terminó el <span id="cerradoRsvp"></span>.</p>
+      <p>Si necesitás hacer una consulta, comunicate con la Secretaría del club.</p>
+    </section>
+
+
+    <!-- ================= RESULTADO DEL PAGO (vuelta de Mercado Pago) ================= -->
+    <section class="card center hidden" id="pantallaResultado">
+      <div class="icon" id="resIcono"></div>
+      <h2 id="resTitulo"></h2>
+      <p id="resTexto"></p>
+      <div class="when hidden" id="resCuando"></div>
+      <p class="small hidden" id="resNota"></p>
+      <div class="detail hidden" id="resDetalle"></div>
+      <a class="button mp hidden" id="resPagar" rel="noopener"></a>
+      <a class="button ghost hidden" id="resVolver" href="./">Volver al formulario</a>
+    </section>
+
+  </main>
+
+  <footer class="foot">Club Universitario de Buenos Aires</footer>
+
+  <script>
+    // Web app de cuba-brindis-dirigentes-gs (deployment fijo). Acá solo se usa como API JSON.
+    const API = 'https://script.google.com/macros/s/AKfycbxuCmwEY2gH_hcs_Z6AjrpqIlh7qJ-v2cfagUmIogZmgIf0TtIbywW0M_FEOKCcmUXB/exec';
+
+    const $ = function(id) { return document.getElementById(id); };
+    const precio = function(n) {
+      return '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    };
+
+    let CFG = null;
+    let asiste = '';      // 'si' | 'no'
+    let nroRegistro = '';
+
+    // ---------- API ----------
+    // GET y POST "simples" (sin headers propios) para que no haya preflight de CORS.
+    function apiGet(query) {
+      return fetch(API + '?' + query, { redirect: 'follow' }).then(leerJson);
+    }
+    function apiPost(cuerpo) {
+      return fetch(API, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(cuerpo)
+      }).then(leerJson);
+    }
+    function leerJson(res) {
+      if (!res.ok) throw new Error('El servidor respondió ' + res.status + '.');
+      return res.json().then(function(j) {
+        if (!j || !j.ok) throw new Error((j && j.error) || 'No pudimos completar la operación.');
+        return j;
+      });
+    }
+
+    // ---------- Arranque ----------
+    function iniciar() {
+      $('carga').classList.remove('fallo');
+      $('cargaTexto').textContent = 'Cargando…';
+      $('cargaReintentar').classList.add('hidden');
+
+      apiGet('api=config').then(function(j) {
+        CFG = j.cfg;
+        pintarEvento();
+        const q = new URLSearchParams(location.search);
+        if (q.get('mp') === 'retorno' || q.get('payment_id') || q.get('collection_id') || q.get('preference_id')) {
+          return apiGet('api=retorno&' + q.toString()).then(function(k) { pintarResultado(k.r); });
+        }
+        if (CFG.cerrado) mostrar('pantallaCerrado');
+      }).then(function() {
+        $('carga').classList.add('hidden');
+      }).catch(function() {
+        $('carga').classList.add('fallo');
+        $('cargaTexto').textContent = 'No pudimos cargar el formulario. Revisá tu conexión y probá de nuevo.';
+        $('cargaReintentar').classList.remove('hidden');
+      });
+    }
+    $('cargaReintentar').addEventListener('click', iniciar);
+
+    function pintarEvento() {
+      const ev = CFG.evento;
+      document.title = 'CUBA · ' + ev.titulo + ' ' + ev.anio;
+      $('evAnio').textContent = 'CUBA · ' + ev.anio;
+      $('evTitulo').textContent = ev.titulo;
+      $('evCuando').textContent = ev.fecha + ' · ' + ev.hora;
+      $('evDonde').textContent = ev.lugar;
+      $('txtFecha').textContent = ev.fecha.toLowerCase() + ' a las ' + ev.hora;
+      $('txtLugar').textContent = ev.lugar;
+      ['txtRsvp', 'noRsvp', 'cerradoRsvp'].forEach(function(id) { $(id).textContent = ev.rsvp; });
+
+      document.querySelectorAll('.valor').forEach(function(el) { el.textContent = precio(CFG.valor); });
+
+      if (CFG.logo) { $('logo').src = CFG.logo; $('logo').classList.remove('hidden'); }
+      if (CFG.invitacion) { $('invitacion').src = CFG.invitacion; $('invitacion').classList.remove('hidden'); }
+
+      const sel = $('area');
+      while (sel.options.length > 1) sel.remove(1);
+      CFG.areas.forEach(function(a) {
+        const o = document.createElement('option');
+        o.value = a; o.textContent = a;
+        sel.appendChild(o);
+      });
+    }
+
+    function mostrar(id) {
+      ['pantallaForm', 'pantallaPago', 'pantallaNo', 'pantallaCerrado', 'pantallaResultado'].forEach(function(p) {
+        $(p).classList.toggle('hidden', p !== id);
+      });
+      window.scrollTo(0, 0);
+    }
+
+    // ---------- Sí / No ----------
+    function elegir(valor) {
+      asiste = valor;
+      $('btnSi').classList.toggle('on', valor === 'si');
+      $('btnNo').classList.toggle('on', valor === 'no');
+      $('notaPago').classList.toggle('hidden', valor !== 'si');
+      $('btnEnviar').textContent = valor === 'si' ? 'Confirmar asistencia y pagar' : 'Enviar respuesta';
+      $('error').classList.add('hidden');
+    }
+    $('btnSi').addEventListener('click', function() { elegir('si'); });
+    $('btnNo').addEventListener('click', function() { elegir('no'); });
+
+    function error(msg) {
+      $('error').textContent = msg;
+      $('error').classList.remove('hidden');
+    }
+
+    // ---------- Envío ----------
+    $('form').addEventListener('submit', function(ev) {
+      ev.preventDefault();
+      $('error').classList.add('hidden');
+
+      const datos = {
+        nombre: $('nombre').value.trim(),
+        email: $('email').value.trim(),
+        area: $('area').value,
+        asiste: asiste
+      };
+
+      if (datos.nombre.length < 3) return error('Completá tu apellido y nombre.');
+      if (datos.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email)) return error('Revisá el email.');
+      if (!datos.area) return error('Elegí a qué área pertenecés.');
+      if (!datos.asiste) return error('Indicá si asistís al asado.');
+
+      const btn = $('btnEnviar');
+      const texto = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Enviando…';
+
+      apiPost({ accion: 'registrar', datos: datos }).then(function(j) {
+        const r = j.r;
+        if (!r.asiste) {
+          $('noNombre').textContent = r.nombre;
+          return mostrar('pantallaNo');
+        }
+        nroRegistro = r.nro;
+        $('pagoNombre').textContent = r.nombre;
+        $('pagoNro').textContent = r.nro;
+        $('pagoMonto').textContent = precio(r.monto);
+        linkDePago(r.urlPago);
+        mostrar('pantallaPago');
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = texto;
+        error((err && err.message && err.message.indexOf('Failed to fetch') === -1 && err.message) ||
+              'No pudimos guardar tu respuesta. Probá de nuevo.');
+      });
+    });
+
+    // ---------- Link de Mercado Pago ----------
+    function esLinkMP(url) {
+      return typeof url === 'string' && /^https:\/\/([a-z0-9-]+\.)*mercadopago\.com(\.[a-z]{2})?\//.test(url);
+    }
+    function linkDePago(url) {
+      const ok = esLinkMP(url);
+      $('btnPagar').classList.toggle('hidden', !ok);
+      $('errorPago').classList.toggle('hidden', ok);
+      $('btnReintentar').classList.toggle('hidden', ok);
+      if (ok) $('btnPagar').href = url;
+    }
+
+    $('btnReintentar').addEventListener('click', function() {
+      const btn = $('btnReintentar');
+      btn.disabled = true;
+      btn.textContent = 'Generando…';
+
+      const fin = function(url) {
+        btn.disabled = false;
+        btn.textContent = 'Generar el link de pago';
+        linkDePago(url);
+      };
+
+      apiPost({ accion: 'linkPago', nro: nroRegistro })
+        .then(function(j) { fin(j.r.urlPago); })
+        .catch(function() { fin(''); });
+    });
+
+    // ---------- Vuelta de Mercado Pago ----------
+    function pintarResultado(r) {
+      const ev = CFG.evento;
+      const enProceso = ['pending', 'in_process', 'authorized'].indexOf(r.estado) !== -1;
+      let icono = '!', clase = 'wait', titulo, texto;
+
+      if (r.estado === 'approved') {
+        icono = '✓'; clase = 'ok'; titulo = '¡Pago aprobado!';
+        texto = (r.nombre ? r.nombre + ', tu' : 'Tu') + ' lugar en el brindis está confirmado.';
+      } else if (enProceso) {
+        icono = '…'; titulo = 'Pago en proceso';
+        texto = 'Mercado Pago todavía está procesando el pago. No hace falta que pagues de nuevo: cuando se acredite, tu lugar queda confirmado.';
+      } else if (r.estado === 'rejected') {
+        icono = '✕'; clase = 'bad'; titulo = 'El pago fue rechazado';
+        texto = 'Tu asistencia sigue registrada, pero el cubierto todavía no está pago. Podés probar con otro medio de pago.';
+      } else if (r.estado === 'error') {
+        titulo = 'No pudimos verificar el pago';
+        texto = 'Si ya pagaste, no pagues de nuevo: el pago se registra solo en unos minutos. Si no llegaste a pagar, podés hacerlo ahora.';
+      } else {
+        titulo = 'El pago no se completó';
+        texto = 'Tu asistencia quedó registrada, pero falta el pago del cubierto para confirmar tu lugar.';
+      }
+
+      $('resIcono').className = 'icon ' + clase;
+      $('resIcono').textContent = icono;
+      $('resTitulo').textContent = titulo;
+      $('resTexto').textContent = texto;
+
+      const ok = r.estado === 'approved';
+      $('resCuando').classList.toggle('hidden', !ok);
+      $('resNota').classList.toggle('hidden', !ok);
+      if (ok) {
+        $('resCuando').textContent = ev.fecha + ' · ' + ev.hora;
+        const lugar = document.createElement('small');
+        lugar.textContent = ev.lugar;
+        $('resCuando').appendChild(lugar);
+        $('resNota').textContent = '¡Te esperamos! Si dejaste tu email, te llega el comprobante por ahí.';
+      }
+
+      const det = $('resDetalle');
+      det.textContent = '';
+      [['Registro', r.nro], ['Importe', r.monto ? precio(r.monto) : ''], ['Comprobante de Mercado Pago', r.idPago]]
+        .forEach(function(f) {
+          if (!f[1]) return;
+          const row = document.createElement('div'); row.className = 'row';
+          const k = document.createElement('span'); k.textContent = f[0];
+          const v = document.createElement('strong'); v.textContent = f[1];
+          row.appendChild(k); row.appendChild(v); det.appendChild(row);
+        });
+      det.classList.toggle('hidden', !det.children.length);
+
+      const conLink = esLinkMP(r.linkPago);
+      $('resPagar').classList.toggle('hidden', !conLink);
+      if (conLink) {
+        $('resPagar').href = r.linkPago;
+        $('resPagar').textContent = 'Pagar el cubierto (' + precio(CFG.valor) + ') con Mercado Pago';
+      }
+      $('resVolver').classList.toggle('hidden', conLink || ok || enProceso);
+
+      mostrar('pantallaResultado');
+    }
+
+    iniciar();
+  </script>
 </body>
 </html>
