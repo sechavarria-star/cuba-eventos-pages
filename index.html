@@ -7,26 +7,30 @@
 <meta name="description" content="Confirmación de asistencia y pago del cubierto — Club Universitario de Buenos Aires.">
 <meta name="theme-color" content="#060e1f">
 <link rel="icon" href="https://drive.google.com/thumbnail?id=1hGttwCyPKZu-MZD79-POx9YgrOEmOARU&sz=w128">
+<!--
+  Redirección (no iframe): Apps Script dentro de un iframe falla cuando el visitante tiene
+  una cuenta de Google logueada (redirige a /a/macros/<dominio>/ y en iPhone se ve
+  "Sorry, unable to open the file at this time"). Abierto directo funciona siempre.
+-->
+<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbxuCmwEY2gH_hcs_Z6AjrpqIlh7qJ-v2cfagUmIogZmgIf0TtIbywW0M_FEOKCcmUXB/exec">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;background:#060e1f;}
-  /* El escudo queda detrás del iframe (transparente mientras carga): lo tapa el formulario cuando pinta */
-  #carga{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(1200px 500px at 50% -120px,rgba(46,111,212,.18),transparent 70%),#060e1f;}
-  #carga img{width:92px;opacity:.9;animation:p 1.4s ease-in-out infinite;}
+  html,body{height:100%;}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    background:radial-gradient(1200px 500px at 50% -120px,rgba(46,111,212,.18),transparent 70%),#060e1f;
+    color:#8ea6cc;font-family:system-ui,-apple-system,sans-serif;font-size:14px;text-align:center;padding:16px;}
+  img{width:92px;opacity:.9;animation:p 1.4s ease-in-out infinite;}
   @keyframes p{50%{opacity:.45;}}
-  #app{position:fixed;inset:0;width:100%;height:100%;border:0;background:transparent;}
+  a{color:#2e6fd4;}
 </style>
 </head>
 <body>
-<div id="carga"><img src="https://drive.google.com/thumbnail?id=1hGttwCyPKZu-MZD79-POx9YgrOEmOARU&sz=w400" alt="CUBA"></div>
-<iframe id="app" title="Brindis y asado de dirigentes 2026"
-  allow="payment; clipboard-write"></iframe>
+<img src="https://drive.google.com/thumbnail?id=1hGttwCyPKZu-MZD79-POx9YgrOEmOARU&sz=w400" alt="CUBA">
+<p>Abriendo el formulario…<br><a id="link" href="https://script.google.com/macros/s/AKfycbxuCmwEY2gH_hcs_Z6AjrpqIlh7qJ-v2cfagUmIogZmgIf0TtIbywW0M_FEOKCcmUXB/exec">Si no se abre, tocá acá</a></p>
 <script>
   // Deployment estable de cuba-brindis-dirigentes-gs (no cambia entre versiones).
   var APP_EXEC = 'https://script.google.com/macros/s/AKfycbxuCmwEY2gH_hcs_Z6AjrpqIlh7qJ-v2cfagUmIogZmgIf0TtIbywW0M_FEOKCcmUXB/exec';
-  // Pasa los parámetros de la URL (por si se usan para algo más adelante).
-  document.getElementById('app').src = APP_EXEC + location.search;
+  location.replace(APP_EXEC + location.search);
 </script>
 </body>
 </html>
