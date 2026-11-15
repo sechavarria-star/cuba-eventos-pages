@@ -421,7 +421,10 @@
     }
     function leerJson(res) {
       if (!res.ok) throw new Error('El servidor respondió ' + res.status + '.');
-      return res.json().then(function(j) {
+      // Si el script publicado no tiene la API, /exec devuelve la página HTML en vez de JSON.
+      return res.text().then(function(txt) {
+        let j;
+        try { j = JSON.parse(txt); } catch (e) { const err = new Error('sin-api'); err.sinApi = true; throw err; }
         if (!j || !j.ok) throw new Error((j && j.error) || 'No pudimos completar la operación.');
         return j;
       });
@@ -443,7 +446,10 @@
         if (CFG.cerrado) mostrar('pantallaCerrado');
       }).then(function() {
         $('carga').classList.add('hidden');
-      }).catch(function() {
+      }).catch(function(err) {
+        // Plan B: si la versión publicada del script no trae la API, abrir el formulario
+        // de Apps Script directo (se ve script.google.com, pero funciona).
+        if (err && err.sinApi) { location.replace(API + location.search); return; }
         $('carga').classList.add('fallo');
         $('cargaTexto').textContent = 'No pudimos cargar el formulario. Revisá tu conexión y probá de nuevo.';
         $('cargaReintentar').classList.remove('hidden');
