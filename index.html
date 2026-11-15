@@ -447,9 +447,12 @@
       }).then(function() {
         $('carga').classList.add('hidden');
       }).catch(function(err) {
-        // Plan B: si la versión publicada del script no trae la API, abrir el formulario
-        // de Apps Script directo (se ve script.google.com, pero funciona).
-        if (err && err.sinApi) { location.replace(API + location.search); return; }
+        // Plan B: si la versión publicada del script no trae la API, /exec devuelve HTML sin
+        // CORS y el fetch falla como error de red. Con conexión, se abre el formulario de
+        // Apps Script directo (se ve script.google.com, pero funciona). Una sola vez por pestaña.
+        let yaIntento = false;
+        try { yaIntento = sessionStorage.getItem('planB') === '1'; sessionStorage.setItem('planB', '1'); } catch (e) {}
+        if (navigator.onLine !== false && !yaIntento) { location.replace(API + location.search); return; }
         $('carga').classList.add('fallo');
         $('cargaTexto').textContent = 'No pudimos cargar el formulario. Revisá tu conexión y probá de nuevo.';
         $('cargaReintentar').classList.remove('hidden');
